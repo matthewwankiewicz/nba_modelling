@@ -1,0 +1,94 @@
+---
+title: "Predicting Playoffs from Four Factors using Logistic Regression"
+author: "Matthew Wankiewicz"
+date: "24/10/2020"
+abstract: ""
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(InformationValue)
+```
+
+```{r}
+nba_data <- read_csv("nba_data.csv")
+nba_data <- nba_data %>% 
+  mutate(team_name = paste(TEAM, year, sep = " "))
+```
+
+
+```{r}
+input_ones <- nba_data[which(nba_data$playoffs == 1), ]  # all 1's
+input_zeros <- nba_data[which(nba_data$playoffs == 0), ]  # all 0's
+set.seed(21)  # for repeatability of samples
+input_ones_training_rows <- sample(1:nrow(input_ones), 0.7*nrow(input_ones))  # 1's for training
+input_zeros_training_rows <- sample(1:nrow(input_zeros), 0.7*nrow(input_ones))  # 0's for training. Pick as many 0's as 1's
+training_ones <- input_ones[input_ones_training_rows, ]  
+training_zeros <- input_zeros[input_zeros_training_rows, ]
+trainingData <- rbind(training_ones, training_zeros)  # row bind the 1's and 0's 
+
+# Create Test Data
+test_ones <- input_ones[-input_ones_training_rows, ]
+test_zeros <- input_zeros[-input_zeros_training_rows, ]
+testData <- rbind(test_ones, test_zeros) 
+```
+
+
+```{r}
+logitMod <- glm(playoffs ~ efg + efg_o + oreb + oreb_o +
+                  fta + fta_o + tov + tov_o, 
+                data=trainingData, family=binomial(link="logit"))
+summary(logitMod)
+predicted <- predict(logitMod, testData, type="response")
+```
+
+```{r}
+nba_data <- nba_data %>% 
+  mutate(efg_coef = 1.76*efg,
+         efg_o_coef = -1.7894*efg_o,
+         oreb_coef = 0.4601*oreb,
+         oreb_o_coef = -.3174*oreb_o,
+         fta_coef = 28.5774*fta,
+         fta_o_coef = -33.1864*fta_o,
+         tov_coef = -1.4081*tov,
+         tov_o_coef = 1.4014*tov_o,
+         sum_mod = -4.13 + efg_coef + efg_o_coef +
+         + oreb_coef + oreb_o_coef + fta_coef + fta_o_coef +
+           tov_coef + tov_o_coef,
+         playoff_prob = round(exp(sum_mod)/(1+exp(sum_mod)), digits = 4)*100)
+new_df <- nba_data %>% 
+  select(team_name, playoff_prob, playoffs)
+
+knitr::kable(new_df)
+```
+
+
+
+```{r}
+optCutOff <- optimalCutoff(testData$playoffs, predicted)[1] 
+
+plotROC(testData$playoffs, predicted)
+sensitivity(testData$playoffs, predicted, threshold = optCutOff)
+confusionMatrix(testData$playoffs, predicted, threshold = optCutOff)
+```
+
+
+```{r}
+new_df %>% ggplot(aes(playoff_prob, playoffs)) + geom_point()
+```
+
+## References
+
+- R Core Team (2019). R: A language and environment for statistical computing. R Foundation for
+  Statistical Computing, Vienna, Austria. URL https://www.R-project.org/.
+  
+- Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43),
+  1686, https://doi.org/10.21105/joss.01686
+  
+- NBA (2020), Advanced Stats,
+  https://stats.nba.com/teams/four-factors/?sort=W&dir=-1&Season=2010-11&SeasonType=Regular%20Season
+  
+- Selva Prabhakaran (2016). InformationValue: Performance Analysis and Companion Functions for
+  Binary Classification Models. R package version 1.2.3.
+  https://CRAN.R-project.org/package=InformationValue
