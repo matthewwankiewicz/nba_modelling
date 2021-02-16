@@ -9,7 +9,11 @@ output: html_document
 ```{r}
 library(tidyverse)
 library(InformationValue)
+library(rvest)
 ```
+# Introduction
+
+# Data
 
 ```{r}
 nba_data <- read_csv("nba_data.csv")
@@ -17,6 +21,41 @@ nba_data <- nba_data %>%
   mutate(team_name = paste(TEAM, year, sep = " "))
 ```
 
+```{r}
+nba_data %>% 
+  ggplot(aes(W, efg, color = playoffs)) +
+  geom_point()
+```
+
+```{r}
+nba_data %>% 
+  ggplot(aes(W, fta, color = playoffs)) +
+  geom_point()
+```
+
+```{r}
+nba_data %>% 
+  ggplot(aes(W, tov, color = playoffs)) +
+  geom_point()
+```
+
+```{r}
+nba_data %>% 
+  ggplot(aes(W, oreb, color = playoffs)) +
+  geom_point()
+```
+
+```{r}
+nba_data %>% 
+  ggplot(aes(W, efg_o, color = playoffs)) +
+  geom_point()
+```
+
+```{r}
+nba_data %>% 
+  ggplot(aes(W, fta_o, color = playoffs)) +
+  geom_point()
+```
 
 ```{r}
 input_ones <- nba_data[which(nba_data$playoffs == 1), ]  # all 1's
@@ -44,23 +83,11 @@ predicted <- predict(logitMod, testData, type="response")
 ```
 
 ```{r}
-nba_data <- nba_data %>% 
-  mutate(efg_coef = 1.76*efg,
-         efg_o_coef = -1.7894*efg_o,
-         oreb_coef = 0.4601*oreb,
-         oreb_o_coef = -.3174*oreb_o,
-         fta_coef = 28.5774*fta,
-         fta_o_coef = -33.1864*fta_o,
-         tov_coef = -1.4081*tov,
-         tov_o_coef = 1.4014*tov_o,
-         sum_mod = -4.13 + efg_coef + efg_o_coef +
-         + oreb_coef + oreb_o_coef + fta_coef + fta_o_coef +
-           tov_coef + tov_o_coef,
-         playoff_prob = round(exp(sum_mod)/(1+exp(sum_mod)), digits = 4)*100)
-new_df <- nba_data %>% 
-  select(team_name, playoff_prob, playoffs)
+nba_data$estimate <- predict.glm(logitMod,
+                                 newdata = nba_data,
+                                 type = "response")
 
-knitr::kable(new_df)
+knitr::kable(nba_data, digits = 2) %>% kableExtra::kable_styling()
 ```
 
 

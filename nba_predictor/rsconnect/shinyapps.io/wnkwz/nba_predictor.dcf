@@ -1,0 +1,12 @@
+name: nba_predictor
+title: nba_predictor
+username:
+account: wnkwz
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3435103
+bundleId: 4040687
+url: https://wnkwz.shinyapps.io/nba_predictor/
+when: 1609294986.57687
+asMultiple: FALSE
+asStatic: FALSE
