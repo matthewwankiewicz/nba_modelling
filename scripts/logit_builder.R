@@ -402,23 +402,33 @@ data19_20 <- data_test %>%
   left_join(data_test20, by = "Team_name")
 
 data19_20 <- data19_20 %>% 
-  mutate(pts_poss_off1920 = 0.9*pts_poss_off.x + 0.9*pts_poss_off.y, 
-         pts_poss_def1920 = 0.9*pts_poss_def.x + 0.9*pts_poss_def.y,
-         efg_percent_off1920 = 0.9*efg_percent_off.x + 0.9*efg_percent_off.y, 
-         efg_percent_def1920 = 0.9*efg_percent_def.x + 0.9*efg_percent_def.y, 
-         tov_percent_off1920 = 0.9*tov_percent_off.x + 0.9*tov_percent_off.y, 
-         tov_percent_def1920 = 0.9*tov_percent_def.x + 0.9*tov_percent_def.y, 
-         orb_percent_off1920 = 0.9*orb_percent_off.x + 0.9*orb_percent_off.y, 
-         orb_percent_def1920 = 0.9*orb_percent_def.x + 0.9*orb_percent_def.y,
-         ft_rate_off1920 = 0.9*ft_rate_off.x + 0.9*ft_rate_off.y, 
-         ft_rate_def1920 = 0.9*ft_rate_def.x + 0.9*ft_rate_def.y) %>% 
+  mutate(pts_poss_off1920 = pts_poss_off.x, 
+         pts_poss_def1920 = pts_poss_def.x,
+         efg_percent_off1920 = efg_percent_off.x, 
+         efg_percent_def1920 = efg_percent_def.x, 
+         tov_percent_off1920 = tov_percent_off.x, 
+         tov_percent_def1920 = tov_percent_def.x, 
+         orb_percent_off1920 = orb_percent_off.x, 
+         orb_percent_def1920 = orb_percent_def.x ,
+         ft_rate_off1920 = ft_rate_off.x, 
+         ft_rate_def1920 = ft_rate_def.x) %>% 
   select(Team_name, pts_poss_off1920, pts_poss_def1920, efg_percent_off1920, efg_percent_def1920,
          tov_percent_off1920, tov_percent_def1920, orb_percent_off1920, orb_percent_def1920,
          ft_rate_off1920, ft_rate_def1920)
 
 
+home_teams <- data19_20$Team_name
+away_teams <- data19_20$Team_name
 
-# read in 2019-20 data
+matchups <- expand_grid(home_teams, away_teams)
+matchups <- matchups %>% drop_na()
+
+matchups <- matchups %>% 
+  left_join(data19_20, by = c("home_teams" = "Team_name"))
+matchups <- matchups %>% 
+  left_join(data19_20, by = c("away_teams" = "Team_name"))
+
+
 nba_games <- read_csv("nba_predictor/games.csv")
 teams <- read_csv("nba_predictor/teams.csv")
 
@@ -430,49 +440,73 @@ teams <- teams %>%
 
 # rename teams
 nba_games <- nba_games %>% 
+  filter(SEASON >= 2019) %>% 
   left_join(teams, by = c("TEAM_ID_home" = "TEAM_ID")) %>% 
   left_join(teams, by = c("TEAM_ID_away" = "TEAM_ID")) %>% 
   rename("Home" = team.x,
-         "Away" = team.y)
-
-# select variables of interest and take 2019 and later
+         "Away" = team.y) 
 nba_games <- nba_games %>% 
-  filter(SEASON >= 2019) %>% 
-  select(Home, Away, PTS_home, PTS_away, HOME_TEAM_WINS)
+  select(Home, Away, HOME_TEAM_WINS)
 
-# add in four factors data
-nba_games_ff <- nba_games %>% 
-  left_join(data19_20, by = c("Home" = "Team_name"))
-nba_games_ff <- nba_games_ff %>% 
-  left_join(data19_20, by = c("Away" = "Team_name"))
+
+matchups <- matchups %>% 
+  left_join(nba_games, by = c("home_teams" = "Home", "away_teams" = "Away"))
+
+
+
 
 # create variables for differences
-nba_games_ff <- nba_games_ff %>% 
-  mutate(efg_diff_off = efg_percent_off1920.x - efg_percent_def1920.y,
-         efg_diff_def = efg_percent_def1920.x - efg_percent_off1920.y,
-         tov_diff_off = tov_percent_off1920.x - tov_percent_def1920.y,
-         tov_diff_def = tov_percent_def1920.x - tov_percent_off1920.y,
-         orb_diff_off = orb_percent_off1920.x - orb_percent_def1920.y,
-         orb_diff_def = orb_percent_def1920.x - orb_percent_off1920.y,
-         ft_diff_off = ft_rate_off1920.x - ft_rate_def1920.y,
-         ft_diff_def = ft_rate_def1920.x - ft_rate_off1920.y,
-         pts_poss_off = pts_poss_off1920.x - pts_poss_def1920.y,
-         pts_poss_def = pts_poss_def1920.x - pts_poss_off1920.y)
+matchups <- matchups %>% 
+  mutate(efg_diff_off = efg_percent_off1920.x - efg_percent_off1920.y,
+         efg_diff_def = efg_percent_def1920.x - efg_percent_def1920.y,
+         tov_diff_off = tov_percent_off1920.x - tov_percent_off1920.y,
+         tov_diff_def = tov_percent_def1920.x - tov_percent_def1920.y,
+         orb_diff_off = orb_percent_off1920.x - orb_percent_off1920.y,
+         orb_diff_def = orb_percent_def1920.x - orb_percent_def1920.y,
+         ft_diff_off = ft_rate_off1920.x - ft_rate_off1920.y,
+         ft_diff_def = ft_rate_def1920.x - ft_rate_def1920.y,
+         pts_poss_off = pts_poss_off1920.x - pts_poss_off1920.y,
+         pts_poss_def = pts_poss_def1920.x - pts_poss_def1920.y)
 
 # create model
-model <- glm(HOME_TEAM_WINS ~ efg_diff_off + efg_diff_def + tov_diff_off + tov_diff_def +
-               orb_diff_off + orb_diff_def + ft_diff_off + ft_diff_def,
-             data = nba_games_ff, family = binomial())
+model <- glm(Home_team_wins ~ efg_diff_def + efg_diff_off +
+               orb_diff_off + tov_diff_off + ft_diff_def + pts_poss_def +
+               pts_poss_off + tov_diff_def + orb_diff_def + ft_diff_off,
+             data = schedule, family = binomial())
 summary(model)
+
+schedule$estimate <- predict.glm(model, newdata = schedule,
+                                 type = "response")
+
+schedule <- schedule %>% 
+  mutate(pred = ifelse(estimate > mean(estimate), 1, 0)) %>% 
+  mutate(accuracy = ifelse(pred == Home_team_wins, 1, 0))
+
+sum(schedule$accuracy)/nrow(schedule)
 
 # get predictions
 nba_games_ff$estimate <- predict.glm(model, newdata = nba_games_ff,
                            type = "response")
 
-# test for accuracy
+
+schedule <- read_csv("nba_predictor/nbaschedule2021.csv")
+schedule <- schedule %>% 
+  left_join(matchups, by = c("Visitor/Neutral" = "home_teams",
+                             "Home/Neutral"= "away_teams"))
+
+write.csv(matchups, file = "matchups.csv")
+write.csv(schedule, file = "2021schedule.csv")
+
+sked <- schedule %>% 
+  distinct()
+
+sum(sked$accuracy)
+### ACCURACY TEST ###
+
+
 nba_games_ff <- nba_games_ff %>% 
   mutate(pred = ifelse(estimate > 0.5, 1, 0)) %>% 
-  mutate(accuracy = ifelse(pred == HOME_TEAM_WINS, 1, 0))
+  mutate(accuracy = ifelse(pred == Home, 1, 0))
 
 sum(nba_games_ff$accuracy)/nrow(nba_games_ff)
 
@@ -503,6 +537,8 @@ model <- glm(home_win ~ efg_diff_off + efg_diff_def + tov_diff_off + tov_diff_de
                orb_diff_off + orb_diff_def + ft_diff_off + ft_diff_def + pts_poss_off + pts_poss_def,
              data = sked, family = binomial())
 summary(model)
+
+
 
 # get predictions
 sked$estimate <- predict.glm(model, newdata = sked,
