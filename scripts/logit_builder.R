@@ -16,9 +16,9 @@ table <- page %>% html_table(fill = T)
 df20 <- table[[1]]
 
 # reformat headers
-test <- df19 %>%
-  row_to_names(row_number = 1) %>% 
-  clean_names()
+#test <- df19 %>%
+#  row_to_names(row_number = 1) %>% 
+#  clean_names()
 
 test20 <- df20 %>%
   row_to_names(row_number = 1) %>% 
@@ -417,16 +417,16 @@ data19_20 <- data19_20 %>%
          ft_rate_off1920, ft_rate_def1920)
 
 
-home_teams <- data19_20$Team_name
-away_teams <- data19_20$Team_name
+home_teams <- data_test20$Team_name
+away_teams <- data_test20$Team_name
 
 matchups <- expand_grid(home_teams, away_teams)
 matchups <- matchups %>% drop_na()
 
 matchups <- matchups %>% 
-  left_join(data19_20, by = c("home_teams" = "Team_name"))
+  left_join(data_test20, by = c("home_teams" = "Team_name"))
 matchups <- matchups %>% 
-  left_join(data19_20, by = c("away_teams" = "Team_name"))
+  left_join(data_test20, by = c("away_teams" = "Team_name"))
 
 
 nba_games <- read_csv("nba_predictor/games.csv")
@@ -457,16 +457,16 @@ matchups <- matchups %>%
 
 # create variables for differences
 matchups <- matchups %>% 
-  mutate(efg_diff_off = efg_percent_off1920.x - efg_percent_off1920.y,
-         efg_diff_def = efg_percent_def1920.x - efg_percent_def1920.y,
-         tov_diff_off = tov_percent_off1920.x - tov_percent_off1920.y,
-         tov_diff_def = tov_percent_def1920.x - tov_percent_def1920.y,
-         orb_diff_off = orb_percent_off1920.x - orb_percent_off1920.y,
-         orb_diff_def = orb_percent_def1920.x - orb_percent_def1920.y,
-         ft_diff_off = ft_rate_off1920.x - ft_rate_off1920.y,
-         ft_diff_def = ft_rate_def1920.x - ft_rate_def1920.y,
-         pts_poss_off = pts_poss_off1920.x - pts_poss_off1920.y,
-         pts_poss_def = pts_poss_def1920.x - pts_poss_def1920.y)
+  mutate(efg_diff_off = efg_percent_off.x - efg_percent_def.y,
+         efg_diff_def = efg_percent_def.x - efg_percent_off.y,
+         tov_diff_off = tov_percent_off.x - tov_percent_def.y,
+         tov_diff_def = tov_percent_def.x - tov_percent_off.y,
+         orb_diff_off = orb_percent_off.x - orb_percent_def.y,
+         orb_diff_def = orb_percent_def.x - orb_percent_off.y,
+         ft_diff_off = ft_rate_off.x - ft_rate_def.y,
+         ft_diff_def = ft_rate_def.x - ft_rate_off.y,
+         pts_poss_off = pts_poss_off.x - pts_poss_def.y,
+         pts_poss_def = pts_poss_def.x - pts_poss_off.y)
 
 # create model
 model <- glm(Home_team_wins ~ efg_diff_def + efg_diff_off +
@@ -476,6 +476,14 @@ model <- glm(Home_team_wins ~ efg_diff_def + efg_diff_off +
 summary(model)
 
 schedule$estimate <- predict.glm(model, newdata = schedule,
+                                 type = "response")
+
+matchups <- matchups %>% 
+  mutate(sum_ratings = sum(efg_diff_def, efg_diff_off, orb_diff_off, orb_diff_def, 
+                            tov_diff_def, tov_diff_off, ft_diff_def, ft_diff_off,
+                            pts_poss_def, pts_poss_off))
+
+matchups$estimate <- predict.glm(model, newdata = matchups,
                                  type = "response")
 
 schedule <- schedule %>% 
@@ -494,8 +502,8 @@ schedule <- schedule %>%
   left_join(matchups, by = c("Visitor/Neutral" = "home_teams",
                              "Home/Neutral"= "away_teams"))
 
-write.csv(matchups, file = "matchups.csv")
-write.csv(schedule, file = "2021schedule.csv")
+write.csv(matchups, file = "nba_predictor/matchups.csv")
+write.csv(schedule, file = "nba_predictor/2021schedule.csv")
 
 sked <- schedule %>% 
   distinct()

@@ -5,8 +5,8 @@ account: wnkwz
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 3435103
-bundleId: 4231874
+bundleId: 4238090
 url: https://wnkwz.shinyapps.io/nba_predictor/
-when: 1613512029.8497
+when: 1613608062.90991
 asMultiple: FALSE
 asStatic: FALSE
