@@ -24,10 +24,10 @@ ui <- navbarPage("Four Factors Model",
             sidebarLayout(
             sidebarPanel(
             selectInput(inputId = "home",
-                        label = "Select Home Team:",
+                        label = "Select Team 1:",
                         choices = sort(unique(matchups$home_teams))),
             selectInput(inputId = "away",
-                        label = "Select Away Team:",
+                        label = "Select Team 2:",
                         choices = sort(unique(matchups$away_teams)))),
         mainPanel(
             textOutput("match"),
@@ -36,7 +36,7 @@ ui <- navbarPage("Four Factors Model",
         ))),
         tabPanel("About",
                  mainPanel(h1("About the Model"),
-                           "This model was created by Matthew Wankiewicz. It uses Four Factors data in order to predict the winner of basketball games. This is still a work in progress but as of right now, it is running at about 63% accuracy for the 2020-21 season. The four factors data is from https://cleaningtheglass.com/stats/league/fourfactors.
+                           "This model was created by Matthew Wankiewicz. It uses Four Factors data in order to predict the winner of basketball games. This is still a work in progress but as of right now, it is running at about 60% accuracy for the 2020-21 season. The four factors data is from https://cleaningtheglass.com/stats/league/fourfactors.
                            Gitub repo is available", tags$a(href="https://www.github.com/matthewwankiewicz/nba_modelling", "here.")))
 )
 
@@ -59,8 +59,7 @@ server <- function(input, output) {
                    away_teams == input$away)
         prediction <- round(predict.glm(model, newdata = matchup,
                                   type = "response")[1], digits = 3)*100
-        paste("The", input$home, "have a", prediction, "percent chance of beating", input$away,
-              "when the", input$home, "are the home team.")
+        paste("The", input$home, "have a", prediction, "percent chance of beating", input$away)
     })
 }
 
